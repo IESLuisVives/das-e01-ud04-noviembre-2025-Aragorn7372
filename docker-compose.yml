@@ -1,0 +1,46 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: run
+    restart: always
+    networks:
+      - examen
+  estudiante:
+    image: nginx:latest
+    volumes:
+      - ./web/estudiante/index.html:/usr/share/nginx/html/index.html
+    restart: always
+    networks:
+      - examen
+  dni:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dni
+    restart: always
+    volumes:
+      - ./httpd/.htpasswd:/usr/local/apache2/conf/.htpasswd
+      - ./conf/httpd-auth.conf:/usr/local/apache2/conf/httpd-auth.conf
+      - ./web/dni/index.html:/usr/local/apache2/htdocs/index.html
+    networks:
+      - examen
+  proxy:
+    image: ubuntu/nginx
+    container_name: proxy_server
+    ports:
+      - 443:443
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf
+      - ./proxy/certs:/etc/nginx/certs
+    restart: always
+    depends_on:
+      - estudiante
+      - dni
+      - api
+    networks:
+      - examen
+networks:
+  examen:
+    driver: bridge
